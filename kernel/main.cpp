@@ -1,0 +1,129 @@
+#include <vga.hpp>
+#include <serial.hpp>
+#include <framebuffer.hpp>
+#include <limine.hpp>
+#include <gdt.hpp>
+#include <idt.hpp>
+#include <pic.hpp>
+#include <keyboard.hpp>
+#include <console.hpp>
+#include <shell.hpp>
+#include <panic.hpp>
+#include <tss.hpp>
+#include <pmm.hpp>
+#include <paging.hpp>
+#include <syscall.hpp>
+
+// ===== ЗАПРОСЫ К LIMINE =====
+
+__attribute__((used, section(".limine_requests_start")))
+static volatile uint64_t limine_requests_start_marker[4] = LIMINE_REQUESTS_START_MARKER;
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_base_revision_request base_revision_request = {
+    .id = { LIMINE_COMMON_MAGIC, LIMINE_BASE_REVISION_REQUEST_ID },
+    .revision = 3
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_framebuffer_request framebuffer_request = {
+    .id = { LIMINE_COMMON_MAGIC, LIMINE_FRAMEBUFFER_REQUEST_ID },
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_memmap_request memmap_request = {
+    .id = { LIMINE_COMMON_MAGIC, LIMINE_MEMMAP_REQUEST_ID },
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_hhdm_request hhdm_request = {
+    .id = { LIMINE_COMMON_MAGIC, LIMINE_HHDM_REQUEST_ID },
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests_end")))
+static volatile uint64_t limine_requests_end_marker[4] = LIMINE_REQUESTS_END_MARKER;
+
+// ===== ТОЧКА ВХОДА =====
+
+extern "C" void kmain(void* boot_info) {
+    (void)boot_info;
+    serial::init();
+    serial::puts("Testix init: Booted via Limine!\n");
+
+    if (framebuffer_request.response == nullptr || framebuffer_request.response->framebuffer_count == 0) {
+        panic("Limine did not provide a framebuffer!");
+    }
+
+    struct limine_framebuffer *lfb = framebuffer_request.response->framebuffers[0];
+    
+    BootInfo info;
+    info.framebuffer_base = (uint64_t)lfb->address;
+    info.width = lfb->width;
+    info.height = lfb->height;
+    info.pixels_per_scanline = lfb->pitch / (lfb->bpp / 8);
+    info.bpp = lfb->bpp;
+
+    fb::init(&info);
+    console::init(&info);
+    
+    console::puts("Testix OS v0.1\n");
+    console::puts("---------------------------------\n\n");
+
+    // 1. Архитектура: IDT первым (чтобы ловить ошибки GDT/TSS)
+    serial::puts("Testix init: Initializing IDT...\n");
+    console::puts("Testix init: Initializing IDT...\n");
+    idt_init();
+    
+    serial::puts("Testix init: Initializing GDT...\n");
+    console::puts("Testix init: Initializing GDT...\n");
+    gdt_init();
+    
+    serial::puts("Testix init: Initializing TSS...\n");
+    console::puts("Testix init: Initializing TSS...\n");
+    tss::init();
+
+    // 2. Память
+    if (memmap_request.response == nullptr) panic("No Memory Map from Limine!");
+    serial::puts("Testix init: Initializing PMM...\n");
+    console::puts("Testix init: Initializing PMM...\n");
+    pmm::init(memmap_request.response);
+
+    if (hhdm_request.response == nullptr) panic("No HHDM from Limine!");
+    paging::set_hhdm_offset(hhdm_request.response->offset);
+
+    // 3. Драйверы и syscall
+    serial::puts("Testix init: Initializing syscalls...\n");
+    console::puts("Testix init: Initializing syscalls...\n");
+    syscall::init();
+    
+    serial::puts("Testix init: Initializing PIC & Keyboard...\n");
+    console::puts("Testix init: Initializing PIC & Keyboard...\n");
+    pic::remap();
+    keyboard::init();
+
+    serial::puts("Testix init: Enabling interrupts and starting shell...\n");
+    console::puts("Testix init: Enabling interrupts and starting shell...\n\n");
+    
+    console::puts("---------------------------------\n");
+    console::puts("Welcome to Testix!\n(c)Kirka 2026\nType \"help\" to see all commands.\n\n");
+
+    asm volatile("sti");
+
+    // 4. Shell
+    shell::init();
+
+    for (;;) {
+        char c = keyboard::getchar();
+        if (c != 0) {
+            shell::handle_char(c);
+        } else {
+            asm volatile("hlt");
+        }
+    }
+}
