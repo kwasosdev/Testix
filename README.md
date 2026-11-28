@@ -8,7 +8,7 @@
 [![Architecture](https://img.shields.io/badge/Architecture-x86__64-informational)](https://en.wikipedia.org/wiki/X86-64)
 [![License](https://img.shields.io/badge/License-GNU_GPL_v3-blue)](LICENSE)
 
-**[English](README.md)** | **[Русский](README.ru.md)**
+**[English](README.md)** | **[Русский](README-ru.md)**
 
 </div>
 
