@@ -5,6 +5,10 @@
 **A 64-bit x86_64 hobby operating system written from scratch in C++20 and NASM**
 
 [![Language](https://img.shields.io/badge/C++-00599C?style=flat-square&logo=c%2B%2B&logoColor=white)](https://isocpp.org)
+[![Architecture](https://img.shields.io/badge/Architecture-x86__64-informational)](https://wikipedia.org)
+[![Bootloader](https://shields.io)](https://limine-bootloader.org)
+[![License](https://shields.io)](LICENSE)
+[![Build](https://github.com)](https://github.com)
 
 **[English](README.md)** | **[Русский](README.ru.md)**
 
