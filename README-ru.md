@@ -1,8 +1,16 @@
-# Testix OS v0.1
+<div align="center">
 
-**Testix OS** — учебная 64-битная операционная система для архитектуры `x86_64`, написанная с нуля на freestanding C++20 и NASM с использованием загрузчика [Limine](https://limine-bootloader.org).
+# Testix OS
+
+учебная 64-битная операционная система для архитектуры `x86_64`, написанная с нуля на freestanding C++20 и NASM с использованием загрузчика [Limine](https://limine-bootloader.org).
+
+[![Language](https://img.shields.io/badge/C++-00599C?style=flat-square&logo=c%2B%2B&logoColor=white)](https://en.wikipedia.org/wiki/C%2B%2B)
+[![Architecture](https://img.shields.io/badge/Architecture-x86__64-informational)](https://en.wikipedia.org/wiki/X86-64)
+[![License](https://img.shields.io/badge/License-GNU_GPL_v3-blue)](LICENSE)
 
 Система поддерживает загрузку в режимах **UEFI** и **Legacy BIOS**, вытесняющую многозадачность с изоляцией адресных пространств (Paging + HHDM), системные вызовы (`int 0x80`), интерактивный шелл в пространстве пользователя (**Ring 3**) и встроенный скриптовый язык **kernlang**.
+
+</div>
 
 ---
 
