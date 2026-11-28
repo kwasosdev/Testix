@@ -75,7 +75,9 @@ extern "C" void kmain(void* boot_info) {
 
     fb::init(&info);
     console::init(&info);
-    
+
+    console::clear();
+
     console::puts("Testix OS v0.1\n");
     console::puts("---------------------------------\n\n");
 
@@ -111,11 +113,11 @@ extern "C" void kmain(void* boot_info) {
     pic::remap();
     keyboard::init();
 
-    serial::puts("Testix init: Enabling interrupts and starting shell...\n");
-    console::puts("Testix init: Enabling interrupts and starting shell...\n\n");
+    serial::puts("Testix init: Enabling interrupts...\n");
+    console::puts("Testix init: Enabling interrupts...\n");
 
     serial::puts("Testix init: Enabling pit and task...\n");
-    console::puts("Testix init: Enabling pit and task...\n");
+    console::puts("Testix init: Enabling pit and task...\n\n");
     pit::init(100);
     task::init();
     task::register_current();
@@ -126,6 +128,8 @@ extern "C" void kmain(void* boot_info) {
     asm volatile("sti");
 
     // 4. Shell
+    serial::puts("Testix init: Startinging shell...\n");
+    console::puts("Testix init: Startinging shell...\n\n");
     shell::init();
 
     for (;;) {
