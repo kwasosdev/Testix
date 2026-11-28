@@ -1,6 +1,6 @@
 # Testix OS v0.1
 
-(Russian [README](README-ru.md))
+(Русский [README](README-ru.md))
 
 **Testix OS** is a hobby 64-bit operating system for the `x86_64` architecture, written from scratch in freestanding C++20 and NASM using the [Limine](https://limine-bootloader.org) bootloader.
 
