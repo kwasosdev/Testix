@@ -48,30 +48,11 @@ CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
 LDFLAGS  := -T linker.ld -nostdlib -static -no-pie -Wl,--build-id=none
 
 # --- Пользовательские программы (Ring 3) ---
-USER_BINS := $(BUILD)/user/prog_a.bin $(BUILD)/user/prog_b.bin
+USER_BINS := $(BUILD)/user/prog_a.bin $(BUILD)/user/prog_b.bin $(BUILD)/user/shell.bin
 
 # --- Исходные файлы ядра ---
 C_SRCS   := 
-CXX_SRCS := kernel/main.cpp \
-	kernel/panic/panic.cpp \
-	kernel/mm/pmm.cpp \
-	kernel/syscall/syscall.cpp \
-	kernel/task/task.cpp \
-	kernel/timer/pit.cpp \
-	kernel/loader/loader.cpp \
-	arch/x86_64/interrupts/gdt.cpp \
-	arch/x86_64/interrupts/idt.cpp \
-	arch/x86_64/interrupts/pic.cpp \
-	arch/x86_64/interrupts/tss.cpp \
-	arch/x86_64/paging/paging.cpp \
-	drivers/keyboard/keyboard.cpp \
-	drivers/serial/serial.cpp \
-	drivers/video/vga/vga.cpp \
-	drivers/video/framebuffer/framebuffer.cpp \
-	drivers/video/font/font8x8.cpp \
-	drivers/video/console/console.cpp \
-	kernlang/kernlang.cpp \
-	shell/shell.cpp
+CXX_SRCS := $(shell find kernel arch drivers kernlang -name '*.cpp')
 
 ASM_SRCS := arch/x86_64/entry.asm \
 	arch/x86_64/interrupts/interrupts.asm \
@@ -89,10 +70,10 @@ TARGET := testix.iso
 all: $(TARGET)
 
 # --- Сборка user-программ в плоские бинарники ---
-$(BUILD)/user/%.bin: user/%.cpp
+$(BUILD)/user/%.bin: user/%.cpp user/user.ld
 	@mkdir -p $(dir $@)
 	$(CXX) $(USER_CXXFLAGS) -c $< -o $(BUILD)/user/$*.o
-	$(LD) -Ttext=0x400000 --oformat=binary -nostdlib $(BUILD)/user/$*.o -o $@
+	$(LD) -T user/user.ld --oformat=binary -nostdlib $(BUILD)/user/$*.o -o $@
 
 $(BUILD)/user/user_bins.asm.o: $(USER_BINS)
 
@@ -155,7 +136,7 @@ run-bios: $(TARGET)
 	qemu-system-x86_64 -boot d -cdrom $(TARGET) -serial stdio
 
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) $(TARGET)
 
 context:
 	@mkdir -p $(BUILD)

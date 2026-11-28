@@ -27,4 +27,5 @@ namespace task {
     void sleep_current();
     void exit_current(uint64_t current_rsp);
     void wake_shell();
+    int active_user_tasks();
 }

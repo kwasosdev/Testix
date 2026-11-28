@@ -9,7 +9,7 @@
 #include <pic.hpp>
 #include <keyboard.hpp>
 #include <console.hpp>
-#include <shell.hpp>
+#include <loader.hpp>
 #include <panic.hpp>
 #include <tss.hpp>
 #include <pmm.hpp>
@@ -125,19 +125,12 @@ extern "C" void kmain(void* boot_info) {
     console::puts("---------------------------------\n");
     console::puts("Welcome to Testix!\n(c)Kirka 2026\nType \"help\" to see all commands.\n\n");
 
+    asm volatile("cli");
+    loader::spawn_flat(shell_bin, (size_t)(shell_end - shell_bin));
+    task::sleep_current();
     asm volatile("sti");
 
-    // 4. Shell
-    serial::puts("Testix init: Starting shell...\n");
-    console::puts("Testix init: Starting shell...\n\n");
-    shell::init();
-
     for (;;) {
-        char c = keyboard::getchar();
-        if (c != 0) {
-            shell::handle_char(c);
-        } else {
-            asm volatile("hlt");
-        }
+        asm volatile("hlt");
     }
 }

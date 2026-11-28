@@ -1,4 +1,5 @@
 // task.cpp
+
 #include <task.hpp>
 #include <pmm.hpp>
 #include <paging.hpp>
@@ -164,4 +165,14 @@ void task::exit_current(uint64_t current_rsp) {
 
     tick_count = QUANTUM - 1;
     schedule_from_irq(current_rsp);
+}
+
+int task::active_user_tasks() {
+    int count = 0;
+    for (int i = 0; i < 16; i++) {
+        if (tasks[i].used && tasks[i].is_user) {
+            count++;
+        }
+    }
+    return count;
 }
