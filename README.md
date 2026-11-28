@@ -4,7 +4,7 @@
 
 **A 64-bit x86_64 hobby operating system written from scratch in C++20 and NASM**
 
-[![Language](https://img.shields.io/badge/C++-00599C?style=flat-square&logo=c%2B%2B&logoColor=white)](https://isocpp.org)
+[![Language](https://img.shields.io/badge/C++-00599C?style=flat-square&logo=c%2B%2B&logoColor=white)](https://en.wikipedia.org/wiki/C%2B%2B)
 [![Architecture](https://img.shields.io/badge/Architecture-x86__64-informational)](https://en.wikipedia.org/wiki/X86-64)
 [![License](https://img.shields.io/badge/License-GNU_GPL_v3-blue)](LICENSE)
 
