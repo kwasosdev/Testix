@@ -1,4 +1,4 @@
-// task.cpp
+// kernel/task/task.cpp
 
 #include <task.hpp>
 #include <pmm.hpp>
@@ -39,27 +39,33 @@ static Task* alloc_task() {
     return nullptr;
 }
 
-static Task* build_task(uint64_t entry, uint64_t user_rsp, uint64_t cs, uint64_t ss) {
-    uint64_t stack_phys = (uint64_t)pmm::alloc_page();
+static Task* build_task(uint64_t entry, uint64_t user_rsp, uint64_t cs, uint64_t ss, uint64_t rdi_arg = 0) {
+    Task* t = alloc_task();
     uint64_t hhdm = paging::get_hhdm_offset();
-    uint64_t stack_top = stack_phys + hhdm + 4096;
-    uint64_t* sp = (uint64_t*)stack_top;
+    uint64_t kstack_phys = (uint64_t)pmm::alloc_page();
+    t->kernel_stack_top = kstack_phys + hhdm + 4096;
 
+    uint64_t* sp = (uint64_t*)t->kernel_stack_top;
     *--sp = ss;
     *--sp = user_rsp;
     *--sp = 0x202;
     *--sp = cs;
     *--sp = entry;
 
-    *--sp = 0;
-    *--sp = 0;
+    *--sp = 0; // err_code
+    *--sp = 0; // int_no
 
-    for (int i = 0; i < 15; i++) *--sp = 0;
+    // Порядок pop в irq_common: r15..r8, rbp, rdi, rsi, rdx, rcx, rbx, rax
+    *--sp = 0;       // rax
+    *--sp = 0;       // rbx
+    *--sp = 0;       // rcx
+    *--sp = 0;       // rdx
+    *--sp = 0;       // rsi
+    *--sp = rdi_arg; // rdi (первый аргумент _start(const char* args))
+    *--sp = 0;       // rbp
+    for (int i = 0; i < 8; i++) *--sp = 0; // r8..r15
 
-    Task* t = alloc_task();
     t->rsp = (uint64_t)sp;
-    t->kernel_stack_top = stack_top;
-    t->kernel_stack_phys = stack_phys;
     return t;
 }
 
@@ -82,8 +88,8 @@ Task* task::create_kernel_task(void (*entry)()) {
     return t;
 }
 
-Task* task::create_user_task(uint64_t entry, uint64_t user_stack, uint64_t cr3) {
-    Task* t = build_task(entry, user_stack, 0x1B, 0x23);
+Task* task::create_user_task(uint64_t entry, uint64_t user_stack, uint64_t cr3, uint64_t rdi_arg) {
+    Task* t = build_task(entry, user_stack, 0x1B, 0x23, rdi_arg);
     t->is_user = true;
     t->cr3 = cr3;
     return t;
@@ -119,10 +125,6 @@ void task::schedule_from_irq(uint64_t current_rsp) {
     }
     if (!next) return;
 
-    serial::puts("[sched] switching to pid ");
-    serial::put_hex64(next->pid);
-    serial::puts("\n");
-
     if (next->is_user) {
         kernel_tss.rsp0 = next->kernel_stack_top;
     }
@@ -139,29 +141,12 @@ void task::sleep_current() {
 }
 
 void task::wake_shell() {
-    // Будим первую задачу (pid 1 — shell)
-    if (tasks[0].pid == 1) {
-        tasks[0].used = true;
-    }
+    // Оставлено для совместимости, так как теперь init/shell работают в Ring 3
 }
 
 void task::exit_current(uint64_t current_rsp) {
     if (!current_task) return;
-    current_task->used = false; // Освобождаем слот текущей user-задачи
-
-    // Проверяем, остались ли ещё живые задачи
-    bool any_alive = false;
-    for (int i = 0; i < 16; i++) {
-        if (tasks[i].used) {
-            any_alive = true;
-            break;
-        }
-    }
-
-    // Если все user-задачи завершились — возвращаем управление в shell
-    if (!any_alive) {
-        wake_shell();
-    }
+    current_task->used = false;
 
     tick_count = QUANTUM - 1;
     schedule_from_irq(current_rsp);

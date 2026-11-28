@@ -1,0 +1,6 @@
+NAME
+  rm - remove files from VFS
+SYNOPSIS
+  rm <filename>
+DESCRIPTION
+  Deletes the specified file from the virtual file system.

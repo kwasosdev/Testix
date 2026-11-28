@@ -1,0 +1,6 @@
+NAME
+  cat - print file contents
+SYNOPSIS
+  cat <filename>
+DESCRIPTION
+  Reads a file from VFS and prints its contents to the terminal.

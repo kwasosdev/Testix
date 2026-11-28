@@ -1,0 +1,2 @@
+var os = Testix
+print "Hello from "  " VFS!"

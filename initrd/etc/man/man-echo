@@ -1,0 +1,7 @@
+NAME
+  echo - display a line of text or write to a file
+SYNOPSIS
+  echo <text> [> filename]
+DESCRIPTION
+  Prints text to stdout, or writes it to a VFS file when '>' is used.
+  Example: echo Hello Testix > hello.txt

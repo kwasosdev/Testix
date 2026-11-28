@@ -1,0 +1,7 @@
+NAME
+  ls - list directory contents
+SYNOPSIS
+  ls [directory]
+DESCRIPTION
+  Lists files in VFS with color coding (blue = dir, green = executable).
+  Example: 'ls etc' shows configuration and manual files.

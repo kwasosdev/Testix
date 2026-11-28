@@ -1,0 +1,7 @@
+NAME
+  edit - interactive line-based text editor
+SYNOPSIS
+  edit <filename>
+DESCRIPTION
+  Opens a line editor for creating scripts or text files.
+  Type '.save' on a new line to save, or '.cancel' to abort.

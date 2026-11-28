@@ -1,6 +1,7 @@
 // kernel/timer/pit.cpp
 
 #include <pit.hpp>
+#include <console.hpp>
 
 namespace pit {
     static inline void outb(uint16_t port, uint8_t val) {
@@ -14,5 +15,8 @@ namespace pit {
         outb(0x40, (divisor >> 8) & 0xFF);
     }
     uint64_t get_ticks() { return ticks; }
-    void increment_ticks() { ticks++; }
+        void increment_ticks() {
+        ticks++;
+        console::tick();
+    }
 }

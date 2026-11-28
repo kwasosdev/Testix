@@ -7,6 +7,7 @@
 #include <task.hpp>
 #include <types.hpp>
 #include <idt.hpp>
+#include <vfs.hpp>
 
 struct SyscallRegs {
     uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
@@ -39,19 +40,42 @@ extern "C" void syscall_handler_c(SyscallRegs* regs) {
         regs->rax = 0;
     }
     else if (num == 6) {
-        bool ok = false;
-        if (regs->rdi == 1) {
-            ok = loader::spawn_flat(prog_a_bin, (size_t)(prog_a_end - prog_a_bin));
-        } else if (regs->rdi == 2) {
-            ok = loader::spawn_flat(prog_b_bin, (size_t)(prog_b_end - prog_b_bin));
-        }
-        regs->rax = ok ? 1 : 0;
+        // sys_spawn(const char* path, const char* args)
+        regs->rax = loader::spawn_file((const char*)regs->rdi, (const char*)regs->rsi) ? 1 : 0;
     }
     else if (num == 7) {
         panic("panictest: triggered from Ring 3!");
     }
     else if (num == 8) {
         regs->rax = (uint64_t)task::active_user_tasks();
+    }
+    else if (num == 9) {
+        // sys_readdir(size_t index, char* out_name, size_t* out_size)
+        regs->rax = vfs::get_entry((size_t)regs->rdi, (char*)regs->rsi, (size_t*)regs->rdx) ? 1 : 0;
+    }
+    else if (num == 10) {
+        // sys_read_file(const char* name, void* buf, size_t max_size) -> bytes read or -1
+        regs->rax = (uint64_t)(int64_t)vfs::read((const char*)regs->rdi, (void*)regs->rsi, (size_t)regs->rdx);
+    }
+    else if (num == 11) {
+        // sys_write_file(const char* name, const void* data, size_t size)
+        regs->rax = vfs::write((const char*)regs->rdi, (const void*)regs->rsi, (size_t)regs->rdx) ? 1 : 0;
+    }
+    else if (num == 12) {
+        // sys_remove_file(const char* name)
+        regs->rax = vfs::remove((const char*)regs->rdi) ? 1 : 0;
+    }
+    else if (num == 13) {
+        console::set_color((uint32_t)regs->rdi);
+        regs->rax = 0;
+    }
+    else if (num == 14) {
+        regs->rax = vfs::chdir((const char*)regs->rdi) ? 1 : 0;
+    }
+    else if (num == 15) {
+        // sys_getcwd(char* buf, size_t max_len)
+        vfs::getcwd((char*)regs->rdi, (size_t)regs->rsi);
+        regs->rax = 0;
     }
 
     else {

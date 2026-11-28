@@ -1,0 +1,7 @@
+NAME
+  kernlang - execute Testix scripting language files
+SYNOPSIS
+  kernlang <script.kl>
+DESCRIPTION
+  Interprets and runs a kernlang script (supports var, print, sleep, clear, halt).
+  Can also be invoked via 'run <script.kl>'.

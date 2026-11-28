@@ -1,0 +1,7 @@
+NAME
+  man - display system reference manuals
+SYNOPSIS
+  man [command]
+DESCRIPTION
+  Displays manual pages stored in /etc/man/man-<command>.
+  Run without arguments to list all installed manual pages.

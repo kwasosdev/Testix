@@ -1,6 +1,7 @@
 .continueignore
 project_context.txt
 build/
+initrd/bin/*
 iso_root/
 *.o
 *.elf
