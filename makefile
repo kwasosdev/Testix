@@ -1,10 +1,30 @@
 # --- Настройки кросс-компилятора ---
-CROSS    ?=
-CC       := $(CROSS)gcc
-CXX      := $(CROSS)g++
-LD       := $(CROSS)ld
-AS       := nasm
-OBJCOPY  := $(CROSS)objcopy
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+
+ifeq ($(UNAME_S),Linux)
+    DISTRO := $(shell grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+    ifeq ($(DISTRO),arch)
+        CROSS ?=
+				OVMF_CODE  ?= /usr/share/edk2/x64/OVMF_CODE.4m.fd
+        OVMF_VARS  ?= /usr/share/edk2/x64/OVMF_VARS.4m.fd
+    else
+        CROSS ?= x86_64-elf-
+				OVMF_CODE  ?= /usr/share/OVMF/OVMF_CODE_4M.fd
+        OVMF_VARS  ?= /usr/share/OVMF/OVMF_VARS_4M.fd
+    endif
+endif
+
+ifeq ($(UNAME_S),Darwin)
+	  BREW_PREFIX := $(shell brew --prefix)
+    CROSS       ?= x86_64-elf-
+    LIMINE_DIR  ?= $(BREW_PREFIX)/share/limine
+    LIMINE_BIN  ?= $(BREW_PREFIX)/bin/limine
+    OVMF_CODE   ?= $(BREW_PREFIX)/share/qemu/edk2-x86_64-code.fd
+    OVMF_VARS   ?= $(BREW_PREFIX)/share/qemu/edk2-i386-vars.fd
+endif
+
+NASM := nasm
 
 # --- Директории и файлы ---
 BUILD      := build
@@ -63,8 +83,10 @@ ASM_OBJS := $(patsubst %.asm,$(BUILD)/%.asm.o, $(ASM_SRCS))
 
 OBJS := $(ASM_OBJS) $(C_OBJS) $(CXX_OBJS)
 
+TARGET := testix.iso
+
 # --- Основные цели ---
-all: $(BUILD)/testix.iso
+all: $(TARGET)
 
 # --- Сборка user-программ в плоские бинарники ---
 $(BUILD)/user/%.bin: user/%.cpp
@@ -85,14 +107,14 @@ $(BUILD)/%.o: %.c
 
 $(BUILD)/%.asm.o: %.asm
 	@mkdir -p $(dir $@)
-	$(AS) -f elf64 $< -o $@
+	$(NASM) -f elf64 $< -o $@
 
 # --- Линковка ядра ---
 $(KERNEL): $(OBJS) linker.ld
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS)
 
 # --- Создание ISO-образа через Limine ---
-$(BUILD)/testix.iso: $(KERNEL) limine.conf
+$(TARGET): $(KERNEL) limine.conf
 	@rm -rf $(ISO_ROOT)
 	@mkdir -p $(ISO_ROOT)/boot
 	@mkdir -p $(ISO_ROOT)/EFI/BOOT
@@ -118,21 +140,19 @@ $(BUILD)/testix.iso: $(KERNEL) limine.conf
 	limine bios-install $@
 
 # --- Запуск в QEMU ---
-run-efi: $(BUILD)/testix.iso
-	cp /usr/share/OVMF/OVMF_VARS_4M.fd $(BUILD)/OVMF_VARS.fd
+run-efi: $(TARGET)
+	cp $(OVMF_VARS) $(BUILD)/OVMF_VARS.fd
+	cp $(OVMF_CODE) $(BUILD)/OVMF_CODE.fd
 	qemu-system-x86_64 \
 		-machine q35 \
 		-global ICH9-LPC.disable_s3=1 \
-		-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
+		-drive if=pflash,format=raw,readonly=on,file=$(BUILD)/OVMF_CODE.fd \
 		-drive if=pflash,format=raw,file=$(BUILD)/OVMF_VARS.fd \
-		-boot d -cdrom $(BUILD)/testix.iso \
+		-boot d -cdrom $(TARGET) \
 		-serial stdio -net none
 
-run-bios: $(BUILD)/testix.iso
-	qemu-system-x86_64 -boot d -cdrom $(BUILD)/testix.iso -serial stdio
-
-run: $(BUILD)/testix.iso
-	qemu-system-x86_64 -cdrom $(BUILD)/testix.iso -serial stdio
+run-bios: $(TARGET)
+	qemu-system-x86_64 -boot d -cdrom $(TARGET) -serial stdio
 
 clean:
 	rm -rf $(BUILD)

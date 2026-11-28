@@ -128,8 +128,8 @@ extern "C" void kmain(void* boot_info) {
     asm volatile("sti");
 
     // 4. Shell
-    serial::puts("Testix init: Startinging shell...\n");
-    console::puts("Testix init: Startinging shell...\n\n");
+    serial::puts("Testix init: Starting shell...\n");
+    console::puts("Testix init: Starting shell...\n\n");
     shell::init();
 
     for (;;) {

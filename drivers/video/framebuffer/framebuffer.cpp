@@ -1,5 +1,3 @@
-// drivers/video/framebuffer/framebuffer.cpp
-
 #include <framebuffer.hpp>
 #include <font8x8.hpp>
 
@@ -23,26 +21,23 @@ namespace fb {
         return buffer != nullptr;
     }
 
-    // --- Геттеры для VMM (нужны для маппинга Framebuffer в ring3) ---
     void* get_base() { return buffer; }
     uint32_t get_width() { return width; }
     uint32_t get_height() { return height; }
     uint32_t get_bpp() { return bpp; }
 
     void put_pixel(uint32_t x, uint32_t y, uint32_t color) {
-        if (!buffer) return;
-        if (x >= width || y >= height) return;
-        
+        if (!buffer || x >= width || y >= height) return;
+
         if (bpp == 32) {
             uint32_t* ptr = (uint32_t*)buffer;
             ptr[y * pitch + x] = color;
         } else if (bpp == 24) {
             uint32_t offset = (y * pitch + x) * 3;
-            buffer[offset + 0] = (color >> 0) & 0xFF;  // Blue
-            buffer[offset + 1] = (color >> 8) & 0xFF;  // Green
-            buffer[offset + 2] = (color >> 16) & 0xFF; // Red
+            buffer[offset + 0] = (color >> 0) & 0xFF;
+            buffer[offset + 1] = (color >> 8) & 0xFF;
+            buffer[offset + 2] = (color >> 16) & 0xFF;
         } else if (bpp == 16 || bpp == 15) {
-            // Конвертируем 32-битный цвет в 16-битный (RGB565)
             uint8_t r = (color >> 16) & 0xFF;
             uint8_t g = (color >> 8) & 0xFF;
             uint8_t b = (color >> 0) & 0xFF;
@@ -53,7 +48,23 @@ namespace fb {
     }
 
     void fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
-        if (!buffer) return;
+        if (!buffer || x >= width || y >= height) return;
+
+        // Автоматическое обрезание по реальным границам монитора
+        if (w > width - x) w = width - x;
+        if (h > height - y) h = height - y;
+
+        if (bpp == 32) {
+            uint32_t* ptr = (uint32_t*)buffer;
+            for (uint32_t j = 0; j < h; ++j) {
+                uint32_t* row = ptr + (y + j) * pitch + x;
+                for (uint32_t i = 0; i < w; ++i) {
+                    row[i] = color;
+                }
+            }
+            return;
+        }
+
         for (uint32_t j = 0; j < h; ++j) {
             for (uint32_t i = 0; i < w; ++i) {
                 put_pixel(x + i, y + j, color);
@@ -62,7 +73,7 @@ namespace fb {
     }
 
     void putchar(char c, uint32_t x, uint32_t y, uint32_t color, uint32_t scale) {
-        if (!buffer) return;
+        if (!buffer || x >= width || y >= height) return;
         const uint8_t* glyph = font::get_glyph(c);
         if (!glyph) return;
         for (int row = 0; row < 8; row++) {
@@ -76,14 +87,19 @@ namespace fb {
 
     void puts(const char* str, uint32_t x, uint32_t y, uint32_t color, uint32_t scale) {
         if (!buffer) return;
-        uint32_t offset_x = 0;
+        uint32_t start_x = x;
         while (*str) {
             if (*str == '\n') {
                 y += 8 * scale + 4;
-                offset_x = 0;
+                x = start_x;
             } else {
-                putchar(*str, x + offset_x, y, color, scale);
-                offset_x += 8 * scale;
+                if (x + 8 * scale > width) {
+                    x = start_x;
+                    y += 8 * scale + 4;
+                }
+                if (y + 8 * scale > height) break;
+                putchar(*str, x, y, color, scale);
+                x += 8 * scale;
             }
             str++;
         }
