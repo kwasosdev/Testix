@@ -10,6 +10,8 @@
 
 **[English](README.md)** | **[Русский](README-ru.md)**
 
+![Shell](pictures/shell.png)
+
 </div>
 
 The system supports booting in both **UEFI** and **Legacy BIOS** modes, preemptive multitasking with address space isolation (Paging + HHDM), system calls (`int 0x80`), an interactive userspace shell (**Ring 3**), and a built-in scripting language called **kernlang**.
