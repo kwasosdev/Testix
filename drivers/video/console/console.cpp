@@ -1,3 +1,5 @@
+// drivers/video/console/console.cpp
+
 #include <console.hpp>
 
 namespace console {

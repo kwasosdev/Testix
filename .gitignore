@@ -1,0 +1,7 @@
+.continueignore
+project_context.txt
+build/
+iso_root/
+*.o
+*.elf
+*.iso

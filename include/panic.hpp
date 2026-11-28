@@ -1,3 +1,5 @@
+// include/panic.hpp
+
 #pragma once
 #include <stdint.h>
 

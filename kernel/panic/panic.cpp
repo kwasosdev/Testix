@@ -1,3 +1,5 @@
+// kernel/panic/panic.cpp
+
 #include <panic.hpp>
 #include <serial.hpp>
 #include <framebuffer.hpp>

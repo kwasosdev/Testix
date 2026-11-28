@@ -1,3 +1,5 @@
+; arch/x86_64/entry.asm
+
 [bits 64]
 [extern kmain]
 [extern __bss_start]

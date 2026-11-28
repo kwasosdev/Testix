@@ -1,5 +1,6 @@
+// include/pmm.hpp
+
 #pragma once
-#include <stdint.h>
 
 // Предварительное объявление, чтобы не тянуть весь limine.hpp
 struct limine_memmap_response;

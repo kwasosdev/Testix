@@ -1,3 +1,5 @@
+// shell/shell.cpp
+
 #include <console.hpp>
 #include <kernlang.hpp>
 #include <panic.hpp>
@@ -7,6 +9,9 @@
 #include <framebuffer.hpp>
 #include <serial.hpp>
 #include <stddef.h>
+#include <task.hpp>
+#include <loader.hpp>
+#include <task.hpp>
 
 namespace shell {
     static char cmd_buffer[256];
@@ -51,59 +56,24 @@ namespace shell {
         console::puts("[shell] done.\n");
     }
 
+
     static void test_ring3() {
-        console::puts("[shell] building user program...\n");
-        
-        static uint8_t user_prog[512];
-        size_t user_prog_len = 0;
-        auto emit = [&](uint8_t b) { user_prog[user_prog_len++] = b; };
-        
-        // Генерируем код: sys_write (rax=1) для каждого символа
-        const char* msg = "Hello from Ring 3!\n";
-        while (*msg) {
-            char c = *msg++;
-            emit(0x48); emit(0xC7); emit(0xC0); emit(0x01); emit(0); emit(0); emit(0); // mov rax, 1
-            emit(0x48); emit(0xC7); emit(0xC7); emit((uint8_t)c); emit(0); emit(0); emit(0); // mov rdi, c
-            emit(0xCD); emit(0x80); // int 0x80
+        console::puts("[shell] spawning user tasks...\n");
+
+        size_t size_a = (size_t)(prog_a_end - prog_a_bin);
+        size_t size_b = (size_t)(prog_b_end - prog_b_bin);
+
+        asm volatile("cli");
+        loader::spawn_flat(prog_a_bin, size_a);
+        loader::spawn_flat(prog_b_bin, size_b);
+        task::sleep_current();
+        asm volatile("sti");
+
+        // Ждём, пока задачи не разбудят shell через wake_shell()
+        while (!task::get_current()->used) {
+            asm volatile("hlt");
         }
-        
-        // Бесконечный цикл sys_yield (rax=2)
-        size_t loop_start = user_prog_len;
-        emit(0x48); emit(0xC7); emit(0xC0); emit(0x02); emit(0); emit(0); emit(0);
-        emit(0xCD); emit(0x80);
-        size_t jmp_end = user_prog_len + 2; // Сохраняем позицию ДО записи jmp
-        emit(0xEB); emit((uint8_t)(loop_start - jmp_end));
-        
-        uint64_t hhdm = paging::get_hhdm_offset();
-        uint64_t* user_pml4 = paging::create_address_space();
-        
-        // ВАЖНО: Мапим Framebuffer для ядра (вычитаем hhdm, чтобы получить физический адрес)
-        uint64_t fb_base = (uint64_t)fb::get_base();
-        uint32_t fb_size = fb::get_width() * fb::get_height() * (fb::get_bpp() / 8);
-        
-        uint64_t fb_start = fb_base & ~0xFFF;
-        uint64_t fb_end = (fb_base + fb_size + 0xFFF) & ~0xFFF;
-        
-        for (uint64_t addr = fb_start; addr < fb_end; addr += 4096) {
-            paging::map_page(user_pml4, addr, addr - hhdm, PAGE_WRITE);
-        }
-        
-        // Код на 0x400000
-        void* code_phys = pmm::alloc_page();
-        if (!code_phys) { console::puts("[shell] pmm failed\n"); return; }
-        paging::map_page(user_pml4, 0x400000, (uint64_t)code_phys, PAGE_USER | PAGE_WRITE);
-        uint8_t* code_virt = (uint8_t*)((uint64_t)code_phys + hhdm);
-        for (size_t i = 0; i < user_prog_len; i++) code_virt[i] = user_prog[i];
-        
-        // Стек на 0x7FFF0000
-        void* stack_phys = pmm::alloc_page();
-        if (!stack_phys) { console::puts("[shell] pmm failed\n"); return; }
-        paging::map_page(user_pml4, 0x7FFF0000, (uint64_t)stack_phys, PAGE_USER | PAGE_WRITE);
-        
-        paging::switch_address_space(user_pml4);
-        
-        serial::puts("[shell] entering usermode...\n");
-        enter_usermode(0x400000, 0x7FFF0000 + 4096 - 16);
+        console::puts("\n[shell] all user tasks exited.\n");
     }
 
     static void execute_command() {
@@ -121,7 +91,7 @@ namespace shell {
             console::puts("  list      - Show current script\n");
             console::puts("  run       - Execute current script\n");
             console::puts("  del       - Delete script\n");
-            console::puts("  ring3     - Test Userspace (in dev. DO NOT TOUCH!)\n");
+            console::puts("  ring3     - Test Userspace\n");
         } 
         else if (str_equals(cmd_buffer, "clear")) {
             console::clear();

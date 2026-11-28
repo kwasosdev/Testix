@@ -1,3 +1,5 @@
+// kernel/mm/pmm.cpp
+
 #include <pmm.hpp>
 #include <limine.hpp>
 #include <serial.hpp>
@@ -19,22 +21,21 @@ static inline bool bitmap_test(uint64_t bit) {
     return bitmap[bit / 8] & (1 << (bit % 8));
 }
 
-// ВОТ ЗДЕСЬ ДОЛЖЕН БЫТЬ АРГУМЕНТ
 void pmm::init(struct limine_memmap_response* memmap) {
     for (uint64_t i = 0; i < sizeof(bitmap); i++) {
-        bitmap[i] = 0;
+        bitmap[i] = 0xFF;
     }
 
     for (uint64_t i = 0; i < memmap->entry_count; i++) {
         struct limine_memmap_entry* entry = memmap->entries[i];
         
-        if (entry->type != LIMINE_MEMMAP_USABLE) {
+        if (entry->type == LIMINE_MEMMAP_USABLE) {
             uint64_t start_page = entry->base / PAGE_SIZE;
-            uint64_t page_count = entry->length / PAGE_SIZE;
+            uint64_t end_page = (entry->base + entry->length) / PAGE_SIZE;
             
-            for (uint64_t j = 0; j < page_count; j++) {
-                if ((start_page + j) < sizeof(bitmap) * 8) {
-                    bitmap_set(start_page + j);
+            for (uint64_t j = start_page; j < end_page; j++) {
+                if (j < sizeof(bitmap) * 8) {
+                    bitmap_clear(j);
                 }
             }
         }
@@ -61,5 +62,7 @@ void* pmm::alloc_page() {
 void pmm::free_page(void* ptr) {
     uint64_t addr = (uint64_t)ptr;
     uint64_t page = addr / PAGE_SIZE;
+    if (page < total_pages) {
     bitmap_clear(page);
+}
 }

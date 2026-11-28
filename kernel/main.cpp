@@ -1,3 +1,5 @@
+// kernel/main.cpp
+
 #include <vga.hpp>
 #include <serial.hpp>
 #include <framebuffer.hpp>
@@ -13,6 +15,8 @@
 #include <pmm.hpp>
 #include <paging.hpp>
 #include <syscall.hpp>
+#include <task.hpp>
+#include <pit.hpp>
 
 // ===== ЗАПРОСЫ К LIMINE =====
 
@@ -109,6 +113,12 @@ extern "C" void kmain(void* boot_info) {
 
     serial::puts("Testix init: Enabling interrupts and starting shell...\n");
     console::puts("Testix init: Enabling interrupts and starting shell...\n\n");
+
+    serial::puts("Testix init: Enabling pit and task...\n");
+    console::puts("Testix init: Enabling pit and task...\n");
+    pit::init(100);
+    task::init();
+    task::register_current();
     
     console::puts("---------------------------------\n");
     console::puts("Welcome to Testix!\n(c)Kirka 2026\nType \"help\" to see all commands.\n\n");

@@ -1,5 +1,6 @@
+// include/console.hpp
+
 #pragma once
-#include <stdint.h>
 #include <framebuffer.hpp>
 
 namespace console {

@@ -1,4 +1,7 @@
+; arch/x86_64/interrupts/interrupts.asm
+
 [bits 64]
+DEFAULT REL
 
 global load_gdt
 global load_idt
@@ -208,6 +211,10 @@ load_idt:
 
 ; --- Системный вызов ---
 syscall_entry:
+    cli
+    push 0
+    push 0x80
+
     push rax
     push rbx
     push rcx
@@ -226,6 +233,20 @@ syscall_entry:
     
     mov rdi, rsp
     call syscall_handler_c
+
+    mov rax, [switch_cr3]
+    test rax, rax
+    jz .no_sys_cr3
+    mov cr3, rax
+    mov qword [switch_cr3], 0
+.no_sys_cr3:
+
+    mov rax, [switch_rsp]
+    test rax, rax
+    jz .no_sys_switch
+    mov rsp, rax
+    mov qword [switch_rsp], 0
+.no_sys_switch:
     
     pop r15
     pop r14
@@ -242,6 +263,8 @@ syscall_entry:
     pop rcx
     pop rbx
     pop rax
+
+    add rsp, 16
     iretq
 
 ; --- Прыжок в Ring 3 ---

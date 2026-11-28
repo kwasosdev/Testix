@@ -1,5 +1,8 @@
+// arch/x86_64/interrupts/tss.cpp
+
 #include <tss.hpp>
 #include <serial.hpp>
+#include <types.hpp>
 
 TSS kernel_tss;
 static uint8_t kernel_stack[8192] __attribute__((aligned(16))); // Увеличили стек до 8 КБ

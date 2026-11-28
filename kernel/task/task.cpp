@@ -1,8 +1,10 @@
+// task.cpp
 #include <task.hpp>
 #include <pmm.hpp>
 #include <paging.hpp>
 #include <serial.hpp>
 #include <panic.hpp>
+#include <tss.hpp>
 
 // Глобальные переменные, которые ищет линкер из ассемблера
 uint64_t switch_rsp = 0;
@@ -90,6 +92,11 @@ Task* task::get_current() {
     return current_task;
 }
 
+void task::yield(uint64_t current_rsp) {
+    tick_count = QUANTUM - 1;
+    schedule_from_irq(current_rsp);
+}
+
 void task::schedule_from_irq(uint64_t current_rsp) {
     if (!current_task) return;
     current_task->rsp = current_rsp;
@@ -115,7 +122,46 @@ void task::schedule_from_irq(uint64_t current_rsp) {
     serial::put_hex64(next->pid);
     serial::puts("\n");
 
+    if (next->is_user) {
+        kernel_tss.rsp0 = next->kernel_stack_top;
+    }
+
     current_task = next;
     switch_rsp = next->rsp;
     switch_cr3 = next->cr3;
+}
+
+void task::sleep_current() {
+    if (current_task) {
+        current_task->used = false;
+    }
+}
+
+void task::wake_shell() {
+    // Будим первую задачу (pid 1 — shell)
+    if (tasks[0].pid == 1) {
+        tasks[0].used = true;
+    }
+}
+
+void task::exit_current(uint64_t current_rsp) {
+    if (!current_task) return;
+    current_task->used = false; // Освобождаем слот текущей user-задачи
+
+    // Проверяем, остались ли ещё живые задачи
+    bool any_alive = false;
+    for (int i = 0; i < 16; i++) {
+        if (tasks[i].used) {
+            any_alive = true;
+            break;
+        }
+    }
+
+    // Если все user-задачи завершились — возвращаем управление в shell
+    if (!any_alive) {
+        wake_shell();
+    }
+
+    tick_count = QUANTUM - 1;
+    schedule_from_irq(current_rsp);
 }

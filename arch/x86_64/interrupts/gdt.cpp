@@ -1,6 +1,9 @@
+// arch/x86_64/interrupts/gdt.cpp
+
 #include <gdt.hpp>
 #include <tss.hpp>
 #include <serial.hpp>
+#include <types.hpp>
 
 struct TSSEntry {
     uint16_t limit_low;

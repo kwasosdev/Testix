@@ -1,7 +1,11 @@
+// arch/x86_64/interrupts/idt.cpp
+
 #include <idt.hpp>
 #include <panic.hpp>
 #include <pic.hpp>
 #include <keyboard.hpp>
+#include <types.hpp>
+#include <task.hpp>
 
 static IDTEntry idt[256];
 static IDTPointer idtp;
@@ -33,7 +37,9 @@ extern "C" void isr_handler(Registers* regs) {
 }
 
 extern "C" void irq_handler(Registers* regs) {
-    if (regs->int_no == 33) {
+    if (regs->int_no == 32) {
+        task::schedule_from_irq((uint64_t)regs);
+    } else if (regs->int_no == 33) {
         keyboard::handle_interrupt();
     }
     pic::send_eoi(regs->int_no - 32);
