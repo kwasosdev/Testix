@@ -40,33 +40,34 @@ The system supports booting in both **UEFI** and **Legacy BIOS** modes, preempti
 
 ## Project Structure
 
-```text
+```
 Testix/
-├── arch/x86_64/            # Architecture-specific code (entry.asm, GDT, IDT, TSS, PIC, Paging)
-├── drivers/                # Modular device drivers
-│   ├── keyboard/           # PS/2 keyboard driver
-│   ├── serial/             # COM1 (0x3F8) serial driver
-│   └── video/              # Framebuffer, adaptive console, 8x8 font, and VGA
-├── include/                # Kernel header files
-├── kernel/                 # Core OS kernel
-│   ├── loader/             # Userspace process loader (Ring 3)
+├── kernel/                 # x86_64 Higher-Half Kernel
+│   ├── arch/x86_64/        # Boot entry, GDT, IDT, TSS, PIC, 4-level Paging
+│   ├── drivers/            # Modular drivers (VFS/tar, PS/2 keyboard, serial, console, framebuffer)
+│   ├── include/            # Kernel headers & Limine protocol definitions
+│   ├── loader/             # Flat binary loader & CLI argument passing (Ring 3)
 │   ├── mm/                 # Physical Memory Manager (PMM)
-│   ├── panic/              # Kernel Panic handler (Serial + Framebuffer)
-│   ├── syscall/            # System call dispatcher (int 0x80)
-│   ├── task/               # Task scheduler and context switching
-│   ├── timer/              # PIT timer driver
-│   └── main.cpp            # Kernel entry point kmain()
-├── user/                   # Userspace programs (Ring 3)
-│   ├── kernlang.hpp        # Built-in kernlang script interpreter
-│   ├── prog_a.cpp          # Test userspace task A
-│   ├── prog_b.cpp          # Test userspace task B
-│   ├── shell.cpp           # Userspace command shell
-│   ├── syscall.hpp         # System call wrappers for Ring 3
-│   ├── user_bins.asm       # Embeds user binaries into the kernel image
-│   └── user.ld             # Linker script for Ring 3 binaries
+│   ├── panic/              # Kernel Panic handler & screen
+│   ├── syscall/            # int 0x80 syscall dispatcher
+│   ├── task/               # Preemptive multitasking scheduler (Ring 0 / Ring 3)
+│   ├── timer/              # Programmable Interval Timer (PIT)
+│   ├── linker.ld           # Kernel linker script
+│   └── main.cpp            # Kernel entry point (kmain)
+├── libsys/                 # Ring 3 Userspace SDK
+│   ├── include/            # Syscall wrappers, string/path utilities, kernlang runtime
+│   └── user.ld             # Userspace linker script (0x400000 base)
+├── init/                   # PID 2 init daemon (spawns & respawns shell)
+├── shell/                  # Interactive Ring 3 command shell (cd, help, program launcher)
+├── binutils/               # Standalone userspace utilities (ls, cat, echo, edit, rm, man, uname, kernlang)
+├── initrd/                 # Initial RAM disk root (packed into initrd.tar)
+│   ├── bin/                # Compiled Ring 3 binaries
+│   ├── etc/man/            # System manual pages (man-*)
+│   ├── demo.kl             # Sample kernlang script
+│   └── readme.txt          # Welcome file
+├── pictures/               # Screenshots for documentation
 ├── limine.conf             # Limine bootloader configuration
-├── linker.ld               # Kernel linker script (Higher Half)
-└── makefile                # Cross-platform build system (Linux / macOS)
+└── makefile                # Kbuild-style build system (UEFI & BIOS ISO)
 ```
 
 ---
