@@ -1,8 +1,18 @@
-# Testix OS v0.1
+<div align="center">
 
-(Русский [README](README-ru.md))
+# Testix OS
 
-**Testix OS** is a hobby 64-bit operating system for the `x86_64` architecture, written from scratch in freestanding C++20 and NASM using the [Limine](https://limine-bootloader.org) bootloader.
+**A 64-bit x86_64 hobby operating system written from scratch in C++20 and NASM**
+
+[![Language](https://shields.io)](https://isocpp.org)
+[![Architecture](https://shields.io)](https://wikipedia.org)
+[![Bootloader](https://shields.io)](https://limine-bootloader.org)
+[![License](https://shields.io)](LICENSE)
+[![Build](https://github.com)](https://github.com)
+
+**[English](README.md)** | **[Русский](README.ru.md)**
+
+</div>
 
 The system supports booting in both **UEFI** and **Legacy BIOS** modes, preemptive multitasking with address space isolation (Paging + HHDM), system calls (`int 0x80`), an interactive userspace shell (**Ring 3**), and a built-in scripting language called **kernlang**.
 
